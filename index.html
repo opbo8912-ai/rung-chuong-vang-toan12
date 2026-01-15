@@ -2,38 +2,36 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RUNG CHUÔNG VÀNG - TOÁN 12 PRO</title>
+<link rel="icon" href="data:;base64,iVBORw0KGgo=" >
 <style>
+:root{--bg1:#141e30;--bg2:#243b55;--gold:#d4af37}
+*{box-sizing:border-box}
 body{
-    margin:0;height:100vh;display:flex;justify-content:center;align-items:center;
-    background:linear-gradient(to right,#141e30,#243b55);
-    font-family:Arial;color:white;
+    margin:0;min-height:100vh;display:flex;justify-content:center;align-items:center;
+    background:linear-gradient(90deg,var(--bg1),var(--bg2));font-family:Arial,Helvetica,sans-serif;color:white;
 }
 #box{
-    width:90%;max-width:950px;
-    background:rgba(0,0,0,.85);
-    padding:25px;border-radius:20px;border:4px solid gold;
-    text-align:center;
+    width:92%;max-width:980px;background:rgba(0,0,0,.88);padding:22px;border-radius:16px;border:4px solid var(--gold);text-align:center;
 }
+@media (max-width:480px){#box{padding:16px;border-radius:12px}}
 .screen{display:none}
 .active{display:block}
-button,select,input{
-    padding:12px;font-size:1.05rem;border-radius:8px;border:none;margin:5px;
-}
-button{background:gold;font-weight:bold;cursor:pointer}
-.answers{
-    display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;
-}
-.answer{
-    background:#222;padding:15px;border-radius:10px;
-    border:2px solid gold;cursor:pointer
-}
+button,select,input{padding:10px;font-size:1rem;border-radius:8px;border:none;margin:6px}
+button{background:var(--gold);font-weight:700;cursor:pointer}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+@media (max-width:480px){.answers{grid-template-columns:1fr}}
+.answer{background:#222;padding:14px;border-radius:10px;border:2px solid var(--gold);cursor:pointer;user-select:none}
+.answer[aria-disabled="true"]{opacity:.7;pointer-events:none}
 .correct{background:#00b09b!important}
 .wrong{background:#ff4b2b!important}
 table{width:100%;border-collapse:collapse;margin-top:15px}
-th,td{border:1px solid #888;padding:8px}
+th,td{border:1px solid #888;padding:8px;text-align:center}
 th{background:#333}
-#timer{font-size:2.2rem;color:gold}
+#timer{font-size:2rem;color:var(--gold);font-weight:700}
+.badge{display:inline-block;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.03);margin-right:6px}
+small{opacity:.85}
 </style>
 </head>
 <body>
@@ -43,35 +41,36 @@ th{background:#333}
 <div id="start" class="screen active">
     <h1>RUNG CHUÔNG VÀNG</h1>
     <h3>TOÁN 12</h3>
-    <input id="name" placeholder="Nhập tên">
+    <input id="name" placeholder="Nhập tên" aria-label="Tên người chơi">
     <br>
-    <select id="level">
+    <select id="level" aria-label="Chọn độ khó">
         <option value="easy">Toán 12 – Dễ</option>
         <option value="hard">Toán 12 – Khó</option>
         <option value="thpt">Thi THPTQG</option>
     </select>
     <br><br>
-    <button onclick="startGame()">BẮT ĐẦU</button>
+    <button id="startBtn">BẮT ĐẦU</button>
+    <p><small>Phiên bản tĩnh — điểm lưu trên trình duyệt (localStorage). Muốn lưu server, hãy tạo backend.</small></p>
 </div>
 
 <!-- QUIZ -->
-<div id="quiz" class="screen">
-    <div>
-        <span id="player"></span> |
-        <span id="score">Điểm: 0</span> |
-        <span id="progress"></span>
+<div id="quiz" class="screen" aria-live="polite">
+    <div style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:10px">
+        <span class="badge" id="player"></span>
+        <span class="badge" id="score">Điểm: 0</span>
+        <span class="badge" id="progress"></span>
     </div>
     <div id="timer"></div>
     <h2 id="question"></h2>
-    <div class="answers" id="answers"></div>
+    <div class="answers" id="answers" role="list"></div>
 </div>
 
 <!-- END -->
 <div id="end" class="screen">
     <h1>KẾT THÚC</h1>
     <p id="summary"></p>
-    <button onclick="showRank()">XEM BẢNG XẾP HẠNG</button>
-    <button onclick="location.reload()">CHƠI LẠI</button>
+    <button id="viewRank">XEM BẢNG XẾP HẠNG</button>
+    <button id="replay">CHƠI LẠI</button>
 </div>
 
 <!-- RANK -->
@@ -84,106 +83,178 @@ th{background:#333}
         <tbody id="rankBody"></tbody>
     </table>
     <br>
-    <button onclick="location.reload()">QUAY LẠI</button>
+    <button id="back">QUAY LẠI</button>
 </div>
 </div>
 
 <script>
+// Câu hỏi mẫu — bạn có thể mở rộng danh sách
 const data = {
-easy:[
-{q:"Đạo hàm của y=x²?",a:["2x","x","x²","2"],c:0},
-{q:"∫ x dx = ?",a:["x²/2 + C","x² + C","2x","x"],c:0}
-],
-hard:[
-{q:"Hàm y=x³−3x² đạt cực đại tại?",a:["1","2","0","3"],c:0},
-{q:"∫₀¹ x² dx = ?",a:["1/3","1/2","1","2"],c:0}
-],
-thpt:[
-{q:"GTNN của y=x⁴−2x²+1?",a:["0","-1","1","2"],c:0},
-{q:"Số phức z=3−4i có môđun?",a:["5","7","1","25"],c:0}
-]
+  easy:[
+    {q:"Đạo hàm của y = x²?", a:["2x","x","x²","2"], c:0},
+    {q:"∫ x dx = ?", a:["x²/2 + C","x² + C","2x","x"], c:0}
+  ],
+  hard:[
+    {q:"Hàm y = x³ − 3x² đạt cực đại tại?", a:["1","2","0","3"], c:0},
+    {q:"∫₀¹ x² dx = ?", a:["1/3","1/2","1","2"], c:0}
+  ],
+  thpt:[
+    {q:"GTNN của y = x⁴ − 2x² + 1?", a:["0","-1","1","2"], c:0},
+    {q:"Số phức z = 3 − 4i có môđun?", a:["5","7","1","25"], c:0}
+  ]
 };
 
-let q=[],i=0,score=0,time=0,startT=0,timer,name,level;
+let questions = [], idxQ = 0, score = 0, level = 'easy', playerName = '';
+let questionTimeLimit = 25; // seconds for current level
+let timeLeft = 0, intervalId = null;
+
+const startBtn = document.getElementById('startBtn');
+const nameInput = document.getElementById('name');
+const levelSelect = document.getElementById('level');
+const startScreen = document.getElementById('start');
+const quizScreen = document.getElementById('quiz');
+const endScreen = document.getElementById('end');
+const rankScreen = document.getElementById('rank');
+const playerElem = document.getElementById('player');
+const scoreElem = document.getElementById('score');
+const progressElem = document.getElementById('progress');
+const timerElem = document.getElementById('timer');
+const questionElem = document.getElementById('question');
+const answersElem = document.getElementById('answers');
+const summaryElem = document.getElementById('summary');
+const rankBody = document.getElementById('rankBody');
+const viewRankBtn = document.getElementById('viewRank');
+const replayBtn = document.getElementById('replay');
+const backBtn = document.getElementById('back');
+
+startBtn.addEventListener('click', startGame);
+viewRankBtn.addEventListener('click', showRank);
+replayBtn.addEventListener('click', () => location.reload());
+backBtn.addEventListener('click', () => location.reload());
 
 function startGame(){
-    name=nameInput.value;
-    level=levelSelect.value;
-    if(!name)return alert("Nhập tên!");
-    q=data[level];
-    time=level=="easy"?25:level=="hard"?30:40;
-    startT=Date.now();
-    start.classList.remove("active");
-    quiz.classList.add("active");
-    player.innerText="HS: "+name;
-    showQ();
-}
-const nameInput=document.getElementById("name");
-const levelSelect=document.getElementById("level");
+  playerName = nameInput.value.trim();
+  level = levelSelect.value;
+  if(!playerName) return alert('Vui lòng nhập tên!');
 
-function showQ(){
-    clearInterval(timer);
-    timerElem.innerText=time;
-    progress.innerText=`Câu ${i+1}/${q.length}`;
-    question.innerText=q[i].q;
-    answers.innerHTML="";
-    let idx=[0,1,2,3].sort(()=>Math.random()-0.5);
-    idx.forEach(j=>{
-        let d=document.createElement("div");
-        d.className="answer";
-        d.innerText=q[i].a[j];
-        d.onclick=()=>check(d,j==q[i].c);
-        answers.appendChild(d);
-    });
-    timer=setInterval(()=>{
-        timerElem.innerText=--time;
-        if(time<=0) next();
-    },1000);
-}
-const timerElem=document.getElementById("timer");
+  // initialize
+  questions = Array.isArray(data[level]) ? structuredClone(data[level]) : [];
+  if(!questions.length) return alert('Chưa có câu hỏi cho level này.');
+  idxQ = 0; score = 0;
+  questionTimeLimit = level === 'easy' ? 25 : level === 'hard' ? 30 : 40;
 
-function check(btn,ok){
-    clearInterval(timer);
-    document.querySelectorAll(".answer").forEach(x=>x.style.pointerEvents="none");
-    if(ok){
-        score+=level=="easy"?5:level=="hard"?8:10;
-        btn.classList.add("correct");
-        scoreElem.innerText="Điểm: "+score;
-    }else btn.classList.add("wrong");
-    setTimeout(next,1200);
-}
-const scoreElem=document.getElementById("score");
+  startScreen.classList.remove('active');
+  quizScreen.classList.add('active');
+  playerElem.textContent = 'HS: ' + playerName;
+  scoreElem.textContent = 'Điểm: ' + score;
 
-function next(){
-    i++;
-    if(i<q.length) showQ();
-    else endGame();
+  // shuffle questions to add variety
+  questions.sort(() => Math.random() - 0.5);
+  showQuestion();
+}
+
+function showQuestion(){
+  clearTimer();
+  if(idxQ >= questions.length){
+    endGame();
+    return;
+  }
+  const item = questions[idxQ];
+  questionElem.textContent = item.q;
+
+  // prepare answers and shuffle
+  const order = [0,1,2,3].slice(0, item.a.length).sort(() => Math.random() - 0.5);
+  answersElem.innerHTML = '';
+  order.forEach(origIndex => {
+    const btn = document.createElement('div');
+    btn.className = 'answer';
+    btn.setAttribute('role', 'button');
+    btn.tabIndex = 0;
+    btn.textContent = item.a[origIndex];
+    btn.onclick = () => selectAnswer(btn, origIndex === item.c);
+    btn.onkeydown = (e) => { if(e.key === 'Enter' || e.key === ' ') selectAnswer(btn, origIndex === item.c); };
+    answersElem.appendChild(btn);
+  });
+
+  progressElem.textContent = `Câu ${idxQ + 1}/${questions.length}`;
+
+  // start per-question timer
+  timeLeft = questionTimeLimit;
+  timerElem.textContent = timeLeft + 's';
+  intervalId = setInterval(() => {
+    timeLeft -= 1;
+    timerElem.textContent = timeLeft + 's';
+    if(timeLeft <= 0){
+      clearTimer();
+      // mark as timeout, reveal correct and move on
+      revealCorrect();
+      setTimeout(() => nextQuestion(), 1200);
+    }
+  }, 1000);
+}
+
+function selectAnswer(btn, isCorrect){
+  if(!btn || btn.getAttribute('aria-disabled') === 'true') return;
+  clearTimer();
+  // disable all options
+  document.querySelectorAll('.answer').forEach(a => a.setAttribute('aria-disabled', 'true'));
+  if(isCorrect){
+    score += (level === 'easy' ? 5 : level === 'hard' ? 8 : 10);
+    btn.classList.add('correct');
+    scoreElem.textContent = 'Điểm: ' + score;
+  } else {
+    btn.classList.add('wrong');
+    revealCorrect();
+  }
+  setTimeout(() => nextQuestion(), 1200);
+}
+
+function revealCorrect(){
+  const item = questions[idxQ];
+  // find answer elements and add correct class to the one matching item.c
+  const children = Array.from(answersElem.children);
+  children.forEach(ch => {
+    if(ch.textContent === item.a[item.c]) ch.classList.add('correct');
+    ch.setAttribute('aria-disabled', 'true');
+  });
+}
+
+function nextQuestion(){
+  clearTimer();
+  idxQ += 1;
+  showQuestion();
 }
 
 function endGame(){
-    quiz.classList.remove("active");
-    end.classList.add("active");
-    let t=Math.floor((Date.now()-startT)/1000);
-    summary.innerText=`${name} | Level: ${level} | Điểm: ${score} | Thời gian: ${t}s`;
-    saveRank(name,level,score,t);
+  clearTimer();
+  quizScreen.classList.remove('active');
+  endScreen.classList.add('active');
+  const totalTime = Math.floor((questions.length * questionTimeLimit) - (/*approx*/0));
+  summaryElem.textContent = `${playerName} | Level: ${level} | Điểm: ${score}`;
+  saveRank(playerName, level, score, /*unknown time*/ 0);
 }
 
 function saveRank(n,l,s,t){
-    let r=JSON.parse(localStorage.getItem("rank12")||"[]");
+  try{
+    const r = JSON.parse(localStorage.getItem('rank12') || '[]');
     r.push({n,l,s,t});
-    r.sort((a,b)=>b.s-a.s||a.t-b.t);
-    localStorage.setItem("rank12",JSON.stringify(r.slice(0,10)));
+    r.sort((a,b)=>b.s - a.s || a.t - b.t);
+    localStorage.setItem('rank12', JSON.stringify(r.slice(0,10)));
+  }catch(e){console.warn('Lưu xếp hạng thất bại', e)}
 }
 
 function showRank(){
-    end.classList.remove("active");
-    rank.classList.add("active");
-    let r=JSON.parse(localStorage.getItem("rank12")||"[]");
-    rankBody.innerHTML="";
-    r.forEach((x,i)=>{
-        rankBody.innerHTML+=
-        `<tr><td>${i+1}</td><td>${x.n}</td><td>${x.l}</td><td>${x.s}</td><td>${x.t}</td></tr>`;
-    });
+  endScreen.classList.remove('active');
+  rankScreen.classList.add('active');
+  const r = JSON.parse(localStorage.getItem('rank12') || '[]');
+  rankBody.innerHTML = '';
+  r.forEach((x,i)=>{
+    rankBody.innerHTML += `<tr><td>${i+1}</td><td>${x.n}</td><td>${x.l}</td><td>${x.s}</td><td>${x.t}</td></tr>`;
+  });
+}
+
+function clearTimer(){
+  if(intervalId) { clearInterval(intervalId); intervalId = null; }
 }
 </script>
 </body>
