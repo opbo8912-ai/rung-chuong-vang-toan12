@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>RUNG CHUÔNG VÀNG - TOÁN 12 PRO</title>
+<style>
+body{
+    margin:0;height:100vh;display:flex;justify-content:center;align-items:center;
+    background:linear-gradient(to right,#141e30,#243b55);
+    font-family:Arial;color:white;
+}
+#box{
+    width:90%;max-width:950px;
+    background:rgba(0,0,0,.85);
+    padding:25px;border-radius:20px;border:4px solid gold;
+    text-align:center;
+}
+.screen{display:none}
+.active{display:block}
+button,select,input{
+    padding:12px;font-size:1.05rem;border-radius:8px;border:none;margin:5px;
+}
+button{background:gold;font-weight:bold;cursor:pointer}
+.answers{
+    display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;
+}
+.answer{
+    background:#222;padding:15px;border-radius:10px;
+    border:2px solid gold;cursor:pointer
+}
+.correct{background:#00b09b!important}
+.wrong{background:#ff4b2b!important}
+table{width:100%;border-collapse:collapse;margin-top:15px}
+th,td{border:1px solid #888;padding:8px}
+th{background:#333}
+#timer{font-size:2.2rem;color:gold}
+</style>
+</head>
+<body>
+
+<div id="box">
+<!-- START -->
+<div id="start" class="screen active">
+    <h1>RUNG CHUÔNG VÀNG</h1>
+    <h3>TOÁN 12</h3>
+    <input id="name" placeholder="Nhập tên">
+    <br>
+    <select id="level">
+        <option value="easy">Toán 12 – Dễ</option>
+        <option value="hard">Toán 12 – Khó</option>
+        <option value="thpt">Thi THPTQG</option>
+    </select>
+    <br><br>
+    <button onclick="startGame()">BẮT ĐẦU</button>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz" class="screen">
+    <div>
+        <span id="player"></span> |
+        <span id="score">Điểm: 0</span> |
+        <span id="progress"></span>
+    </div>
+    <div id="timer"></div>
+    <h2 id="question"></h2>
+    <div class="answers" id="answers"></div>
+</div>
+
+<!-- END -->
+<div id="end" class="screen">
+    <h1>KẾT THÚC</h1>
+    <p id="summary"></p>
+    <button onclick="showRank()">XEM BẢNG XẾP HẠNG</button>
+    <button onclick="location.reload()">CHƠI LẠI</button>
+</div>
+
+<!-- RANK -->
+<div id="rank" class="screen">
+    <h1>BẢNG XẾP HẠNG</h1>
+    <table>
+        <thead>
+            <tr><th>Hạng</th><th>Tên</th><th>Level</th><th>Điểm</th><th>Thời gian (s)</th></tr>
+        </thead>
+        <tbody id="rankBody"></tbody>
+    </table>
+    <br>
+    <button onclick="location.reload()">QUAY LẠI</button>
+</div>
+</div>
+
+<script>
+const data = {
+easy:[
+{q:"Đạo hàm của y=x²?",a:["2x","x","x²","2"],c:0},
+{q:"∫ x dx = ?",a:["x²/2 + C","x² + C","2x","x"],c:0}
+],
+hard:[
+{q:"Hàm y=x³−3x² đạt cực đại tại?",a:["1","2","0","3"],c:0},
+{q:"∫₀¹ x² dx = ?",a:["1/3","1/2","1","2"],c:0}
+],
+thpt:[
+{q:"GTNN của y=x⁴−2x²+1?",a:["0","-1","1","2"],c:0},
+{q:"Số phức z=3−4i có môđun?",a:["5","7","1","25"],c:0}
+]
+};
+
+let q=[],i=0,score=0,time=0,startT=0,timer,name,level;
+
+function startGame(){
+    name=nameInput.value;
+    level=levelSelect.value;
+    if(!name)return alert("Nhập tên!");
+    q=data[level];
+    time=level=="easy"?25:level=="hard"?30:40;
+    startT=Date.now();
+    start.classList.remove("active");
+    quiz.classList.add("active");
+    player.innerText="HS: "+name;
+    showQ();
+}
+const nameInput=document.getElementById("name");
+const levelSelect=document.getElementById("level");
+
+function showQ(){
+    clearInterval(timer);
+    timerElem.innerText=time;
+    progress.innerText=`Câu ${i+1}/${q.length}`;
+    question.innerText=q[i].q;
+    answers.innerHTML="";
+    let idx=[0,1,2,3].sort(()=>Math.random()-0.5);
+    idx.forEach(j=>{
+        let d=document.createElement("div");
+        d.className="answer";
+        d.innerText=q[i].a[j];
+        d.onclick=()=>check(d,j==q[i].c);
+        answers.appendChild(d);
+    });
+    timer=setInterval(()=>{
+        timerElem.innerText=--time;
+        if(time<=0) next();
+    },1000);
+}
+const timerElem=document.getElementById("timer");
+
+function check(btn,ok){
+    clearInterval(timer);
+    document.querySelectorAll(".answer").forEach(x=>x.style.pointerEvents="none");
+    if(ok){
+        score+=level=="easy"?5:level=="hard"?8:10;
+        btn.classList.add("correct");
+        scoreElem.innerText="Điểm: "+score;
+    }else btn.classList.add("wrong");
+    setTimeout(next,1200);
+}
+const scoreElem=document.getElementById("score");
+
+function next(){
+    i++;
+    if(i<q.length) showQ();
+    else endGame();
+}
+
+function endGame(){
+    quiz.classList.remove("active");
+    end.classList.add("active");
+    let t=Math.floor((Date.now()-startT)/1000);
+    summary.innerText=`${name} | Level: ${level} | Điểm: ${score} | Thời gian: ${t}s`;
+    saveRank(name,level,score,t);
+}
+
+function saveRank(n,l,s,t){
+    let r=JSON.parse(localStorage.getItem("rank12")||"[]");
+    r.push({n,l,s,t});
+    r.sort((a,b)=>b.s-a.s||a.t-b.t);
+    localStorage.setItem("rank12",JSON.stringify(r.slice(0,10)));
+}
+
+function showRank(){
+    end.classList.remove("active");
+    rank.classList.add("active");
+    let r=JSON.parse(localStorage.getItem("rank12")||"[]");
+    rankBody.innerHTML="";
+    r.forEach((x,i)=>{
+        rankBody.innerHTML+=
+        `<tr><td>${i+1}</td><td>${x.n}</td><td>${x.l}</td><td>${x.s}</td><td>${x.t}</td></tr>`;
+    });
+}
+</script>
+</body>
+</html>
